@@ -54,10 +54,10 @@ resource "aws_sqs_queue" "task_queue" {
   }
 }
 
-# RDS instance - for production AWS deployment
+# RDS instance - for AWS deployment
 # Note: LocalStack free tier doesn't support RDS, so for local development
 # we use the PostgreSQL container in docker-compose.yml
-# Uncomment and configure for production AWS deployment:
+# Uncomment and configure for AWS deployment:
 #
 # resource "aws_db_instance" "tasks_db" {
 #   identifier     = var.db_instance_identifier
