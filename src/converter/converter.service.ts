@@ -1,15 +1,12 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { SqsService, SqsMessageWithReceipt } from '../sqs/sqs.service';
-import { Task } from '../tasks/entities/task.entity';
 
 export interface ResultMessage {
   taskId: string;
   type: string;
   result: any;
-  status: 'completed' | 'failed';
+  status: 'processing' | 'completed' | 'failed';
   error?: string;
 }
 
@@ -21,8 +18,6 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private sqsService: SqsService,
-    @InjectRepository(Task)
-    private taskRepository: Repository<Task>,
     private configService: ConfigService,
   ) {}
 
@@ -39,14 +34,16 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
   private readonly TASK_QUEUE_NAME = 'task-queue';
 
   private async ensureQueues(): Promise<void> {
-    // Ensure task queue exists (for receiving tasks)
-    this.taskQueueUrl = await this.sqsService.ensureQueueExists(this.TASK_QUEUE_NAME);
+    // Ensure task queue exists (for receiving tasks) - this will also set up DLQ
+    this.logger.log(`Ensuring task queue exists: ${this.TASK_QUEUE_NAME}`);
+    this.taskQueueUrl = await this.sqsService.ensureQueueExists(this.TASK_QUEUE_NAME, false, this.TASK_QUEUE_NAME);
 
     // Ensure results queue exists (for sending results)
     const resultsQueueName = this.configService.get('sqs.resultsQueueName');
     if (!resultsQueueName) {
       throw new Error('Results queue name not configured');
     }
+    this.logger.log(`Ensuring results queue exists: ${resultsQueueName}`);
     this.resultsQueueUrl = await this.sqsService.ensureQueueExists(resultsQueueName);
   }
 
@@ -65,14 +62,16 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
+    this.logger.log('Stopping converter service polling...');
     this.stopPolling();
+    this.logger.log('Converter service stopped');
   }
 
   private startPolling() {
     const pollInterval = this.configService.get('app.converterPollInterval') || 1000;
     this.pollingInterval = setInterval(() => {
       if (!this.isProcessing) {
-        this.processTasks().catch((error) => {
+        this.processResults().catch((error) => {
           this.logger.error('Error in task processing loop:', error);
         });
       }
@@ -86,7 +85,7 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async processTasks() {
+  private async processResults() {
     if (this.isProcessing) {
       return;
     }
@@ -102,6 +101,7 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
+      this.logger.debug(`Received ${messages.length} task message(s) from task queue`);
       for (const message of messages) {
         await this.processTask(message);
       }
@@ -114,12 +114,18 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
 
   private async processTask(message: SqsMessageWithReceipt) {
     const { taskId, type, payload, receiptHandle } = message;
-    
-    this.logger.debug(`Processing task ${taskId} of type ${type}`);
+    const taskQueueUrl = await this.getTaskQueueUrl();
 
     try {
-      // Update task status to processing
-      await this.taskRepository.update(taskId, { status: 'processing' });
+      this.logger.log(`Converter processed the task - Task ID: ${taskId}, Type: ${type}`);
+
+      // Send processing status to results queue
+      await this.sendResultMessage({
+        taskId,
+        type,
+        result: null,
+        status: 'processing',
+      });
 
       // Process the task based on type
       let result: any;
@@ -146,15 +152,7 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
         this.logger.error(`Task ${taskId} processing failed:`, processError);
       }
 
-      // Update task in database
-      await this.taskRepository.update(taskId, {
-        status: status === 'completed' ? 'completed' : 'failed',
-        result: result,
-        error: error,
-        completed_at: new Date(),
-      });
-
-      // Send result to results queue
+      // Send final result to results queue
       const resultMessage: ResultMessage = {
         taskId,
         type,
@@ -164,19 +162,26 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
       };
       await this.sendResultMessage(resultMessage);
 
-      // Delete message from task queue
-      const taskQueueUrl = await this.getTaskQueueUrl();
+      // Delete message from task queue ONLY after successful completion
+      // If server crashes before this point, message will become visible again after visibility timeout
+      // After 3 failed attempts, message will be moved to failed queue
       await this.sqsService.deleteMessage(taskQueueUrl, receiptHandle);
-
-      this.logger.log(`Task ${taskId} completed with status: ${status}`);
+      this.logger.debug(`Deleted task message ${taskId} from task queue after successful processing`);
     } catch (error) {
       this.logger.error(`Error processing task ${taskId}:`, error);
-      // Update task status to failed
-      await this.taskRepository.update(taskId, {
+      
+      // Don't delete message - let it retry or move to DLQ after 3 attempts
+      // Send failure status to results queue
+      await this.sendResultMessage({
+        taskId,
+        type,
+        result: null,
         status: 'failed',
         error: error instanceof Error ? error.message : 'Unknown error',
-        completed_at: new Date(),
       });
+      
+      // Message will become visible again after visibility timeout
+      // After 3 retries, it will be moved to failed queue automatically by SQS
     }
   }
 
@@ -241,6 +246,6 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
   async sendResultMessage(message: ResultMessage): Promise<void> {
     const queueUrl = await this.getResultsQueueUrl();
     await this.sqsService.sendMessage(queueUrl, message);
-    this.logger.debug(`Result message sent to results queue: ${message.taskId}`);
+    this.logger.log(`Converter created task on the results SQS topic - Task ID: ${message.taskId}, Status: ${message.status}`);
   }
 }

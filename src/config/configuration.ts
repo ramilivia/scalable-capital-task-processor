@@ -13,6 +13,8 @@ export default () => ({
       taskQueueUrl: process.env.SQS_TASK_QUEUE_URL || 'http://localhost:4566/000000000000/task-queue',
       resultsQueueName: process.env.SQS_RESULTS_QUEUE_NAME || 'results-queue',
       resultsQueueUrl: process.env.SQS_RESULTS_QUEUE_URL || 'http://localhost:4566/000000000000/results-queue',
+      visibilityTimeout: parseInt(process.env.SQS_VISIBILITY_TIMEOUT || '300', 10),
+      messageRetentionPeriod: parseInt(process.env.SQS_MESSAGE_RETENTION_PERIOD || '86400', 10),
     },
     database: {
       type: 'postgres',
@@ -29,6 +31,7 @@ export default () => ({
     app: {
       port: parseInt(process.env.PORT || '3000', 10),
       converterPollInterval: parseInt(process.env.CONVERTER_POLL_INTERVAL || '1000', 10),
+      resultsPollInterval: parseInt(process.env.RESULTS_POLL_INTERVAL || '1000', 10),
     },
   });
   

@@ -26,10 +26,27 @@ provider "aws" {
   }
 }
 
+# Dead Letter Queue for failed tasks (after 3 retries)
+resource "aws_sqs_queue" "failed_queue" {
+  name                      = "${var.queue_name}-failed"
+  message_retention_seconds = var.message_retention_period
+  
+  tags = {
+    Environment = "local"
+    ManagedBy   = "terraform"
+  }
+}
+
 resource "aws_sqs_queue" "task_queue" {
   name                      = var.queue_name
   visibility_timeout_seconds = var.visibility_timeout
   message_retention_seconds  = var.message_retention_period
+  
+  # Configure Dead Letter Queue - move messages here after 3 failed attempts
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.failed_queue.arn
+    maxReceiveCount     = 3
+  })
   
   tags = {
     Environment = "local"

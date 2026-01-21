@@ -22,7 +22,7 @@ export class SqsService {
     });
   }
 
-  async ensureQueueExists(queueName: string): Promise<string> {
+  async ensureQueueExists(queueName: string, isDeadLetterQueue: boolean = false, sourceQueueName?: string): Promise<string> {
     if (!queueName) {
       throw new Error('Queue name is required');
     }
@@ -38,13 +38,39 @@ export class SqsService {
       if (error.code === 'AWS.SimpleQueueService.NonExistentQueue') {
         // Create queue if it doesn't exist
         try {
+          const sqsConfig = this.configService.get('sqs');
+          const attributes: any = {
+            VisibilityTimeout: String(sqsConfig.visibilityTimeout),
+            MessageRetentionPeriod: String(sqsConfig.messageRetentionPeriod),
+          };
+
+          // If this is a task queue, set up DLQ redrive policy
+          if (sourceQueueName && !isDeadLetterQueue) {
+            // First ensure the failed queue exists
+            const failedQueueName = `${sourceQueueName}-failed`;
+            const failedQueueUrl = await this.ensureQueueExists(failedQueueName, true);
+            
+            // Get the ARN of the failed queue
+            const failedQueueAttributes = await this.sqs
+              .getQueueAttributes({
+                QueueUrl: failedQueueUrl,
+                AttributeNames: ['QueueArn'],
+              })
+              .promise();
+            
+            const failedQueueArn = failedQueueAttributes.Attributes?.QueueArn;
+            if (failedQueueArn) {
+              attributes.RedrivePolicy = JSON.stringify({
+                deadLetterTargetArn: failedQueueArn,
+                maxReceiveCount: 3,
+              });
+            }
+          }
+
           const result = await this.sqs
             .createQueue({
               QueueName: queueName,
-              Attributes: {
-                VisibilityTimeout: '300',
-                MessageRetentionPeriod: '86400',
-              },
+              Attributes: attributes,
             })
             .promise();
           const queueUrl = result.QueueUrl || '';
@@ -77,11 +103,12 @@ export class SqsService {
 
   async receiveMessages(queueUrl: string, maxMessages: number = 1): Promise<SqsMessageWithReceipt[]> {
     try {
+      const sqsConfig = this.configService.get('sqs');
       const result = await this.sqs
         .receiveMessage({
           QueueUrl: queueUrl,
           MaxNumberOfMessages: maxMessages,
-          VisibilityTimeout: 300,
+          VisibilityTimeout: sqsConfig.visibilityTimeout,
         })
         .promise();
 
