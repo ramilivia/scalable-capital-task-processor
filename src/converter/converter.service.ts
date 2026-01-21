@@ -134,11 +134,9 @@ export class ConverterService implements OnModuleInit, OnModuleDestroy {
 
       try {
         switch (type) {
-          case 'convert_currency':
           case 'convert-currency':
             result = await this.convertCurrency(payload);
             break;
-          case 'calculate_interest':
           case 'calculate-interest':
             result = await this.calculateInterest(payload);
             break;
