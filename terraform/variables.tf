@@ -27,3 +27,40 @@ variable "message_retention_period" {
   type        = number
   default     = 86400
 }
+
+variable "db_instance_identifier" {
+  description = "Identifier for the RDS instance"
+  type        = string
+  default     = "tasks-db"
+}
+
+variable "db_instance_class" {
+  description = "Instance class for the RDS instance"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "db_allocated_storage" {
+  description = "Allocated storage for the RDS instance in GB"
+  type        = number
+  default     = 20
+}
+
+variable "db_name" {
+  description = "Name of the database"
+  type        = string
+  default     = "tasks_db"
+}
+
+variable "db_username" {
+  description = "Username for the database"
+  type        = string
+  default     = "postgres"
+}
+
+variable "db_password" {
+  description = "Password for the database"
+  type        = string
+  default     = "postgres"
+  sensitive   = true
+}

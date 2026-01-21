@@ -21,6 +21,8 @@ provider "aws" {
   
   endpoints {
     sqs = var.localstack_endpoint
+    # RDS is not available in LocalStack free tier, using docker-compose postgres for local dev
+    # rds = var.localstack_endpoint
   }
 }
 
@@ -34,3 +36,29 @@ resource "aws_sqs_queue" "task_queue" {
     ManagedBy   = "terraform"
   }
 }
+
+# RDS instance - for production AWS deployment
+# Note: LocalStack free tier doesn't support RDS, so for local development
+# we use the PostgreSQL container in docker-compose.yml
+# Uncomment and configure for production AWS deployment:
+#
+# resource "aws_db_instance" "tasks_db" {
+#   identifier     = var.db_instance_identifier
+#   engine         = "postgres"
+#   engine_version = "15"
+#   instance_class = var.db_instance_class
+#   allocated_storage = var.db_allocated_storage
+#   storage_type   = "gp2"
+#   
+#   db_name  = var.db_name
+#   username = var.db_username
+#   password = var.db_password
+#   
+#   publicly_accessible = true
+#   skip_final_snapshot = true
+#   
+#   tags = {
+#     Environment = "production"
+#     ManagedBy   = "terraform"
+#   }
+# }
