@@ -98,8 +98,18 @@ Terraform is configured to work with **LocalStack**, allowing developers to:
 
 ### Infrastructure Provisioned
 - **Task Queue** - Main queue for task processing with visibility timeout and message retention
-- **Dead Letter Queue** - Automatically receives messages after 3 failed processing attempts
+- **Dead Letter Queue (Failed Queue)** - Automatically receives messages after failed processing attempts
 - **Queue Configuration** - Redrive policies, visibility timeouts, and retention periods
+
+### Retry Configuration & Dead Letter Queue
+
+The retry mechanism and dead letter queue are configured in Terraform using AWS SQS redrive policies:
+
+- **Visibility Timeout**: When a message is received from the queue, it becomes invisible to other consumers for a configurable period (default: 300 seconds / 5 minutes). This prevents multiple workers from processing the same message simultaneously. If the message isn't deleted within this timeout period, it becomes visible again and can be retried.
+- **Retry Policy**: Messages that fail processing are automatically retried up to **3 times** (`maxReceiveCount = 3`)
+- **Dead Letter Queue**: After 3 failed attempts, messages are automatically moved to the dead letter queue (`task-queue-failed`)
+- **Automatic Handling**: This retry and dead letter queue configuration is handled entirely by AWS SQS through the redrive policy defined in Terraform - no application-level retry logic is required
+
 
 The Terraform configuration is located in the `terraform/` directory and can be applied to both LocalStack (for local development) and AWS (for production deployment).
 
