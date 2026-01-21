@@ -9,6 +9,10 @@ export default () => ({
     sqs: {
       queueName: process.env.SQS_QUEUE_NAME || 'task-queue',
       queueUrl: process.env.SQS_QUEUE_URL || 'http://localhost:4566/000000000000/task-queue',
+      taskQueueName: process.env.SQS_TASK_QUEUE_NAME || 'task-queue',
+      taskQueueUrl: process.env.SQS_TASK_QUEUE_URL || 'http://localhost:4566/000000000000/task-queue',
+      resultsQueueName: process.env.SQS_RESULTS_QUEUE_NAME || 'results-queue',
+      resultsQueueUrl: process.env.SQS_RESULTS_QUEUE_URL || 'http://localhost:4566/000000000000/results-queue',
     },
     database: {
       type: 'postgres',
@@ -24,7 +28,7 @@ export default () => ({
     },
     app: {
       port: parseInt(process.env.PORT || '3000', 10),
-      workerPollInterval: parseInt(process.env.WORKER_POLL_INTERVAL || '5000', 10),
+      converterPollInterval: parseInt(process.env.CONVERTER_POLL_INTERVAL || '1000', 10),
     },
   });
   

@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TasksModule } from './tasks/tasks.module';
+import { ConverterModule } from './converter/converter.module';
 import { Task } from './tasks/entities/task.entity';
 import configuration from './config/configuration';
 
@@ -31,6 +32,7 @@ import configuration from './config/configuration';
       },
     }),
     TasksModule,
+    ConverterModule,
   ],
   controllers: [AppController],
   providers: [AppService],

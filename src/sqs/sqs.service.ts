@@ -1,25 +1,18 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as AWS from 'aws-sdk';
 
-export interface SqsMessage {
-  taskId: string;
-  type: string;
-  payload: any;
-}
-
-export interface SqsMessageWithReceipt extends SqsMessage {
+export interface SqsMessageWithReceipt {
+  [key: string]: any;
   receiptHandle: string;
 }
 
 @Injectable()
-export class SqsService implements OnModuleInit {
+export class SqsService {
   private sqs: AWS.SQS;
-  private queueUrl: string;
 
   constructor(private configService: ConfigService) {
     const awsConfig = this.configService.get('aws');
-    const sqsConfig = this.configService.get('sqs');
 
     this.sqs = new AWS.SQS({
       accessKeyId: awsConfig.accessKeyId,
@@ -27,24 +20,20 @@ export class SqsService implements OnModuleInit {
       region: awsConfig.region,
       endpoint: awsConfig.endpoint,
     });
-
-    this.queueUrl = sqsConfig.queueUrl;
   }
 
-  async onModuleInit() {
-    // Ensure queue exists
-    await this.ensureQueueExists();
-  }
+  async ensureQueueExists(queueName: string): Promise<string> {
+    if (!queueName) {
+      throw new Error('Queue name is required');
+    }
 
-  private async ensureQueueExists(): Promise<void> {
-    const queueName = this.configService.get('sqs.queueName');
-    
     try {
       const result = await this.sqs
         .getQueueUrl({ QueueName: queueName })
         .promise();
-      this.queueUrl = result.QueueUrl;
-      console.log(`Queue URL: ${this.queueUrl}`);
+      const queueUrl = result.QueueUrl || '';
+      console.log(`Queue URL for ${queueName}: ${queueUrl}`);
+      return queueUrl;
     } catch (error: any) {
       if (error.code === 'AWS.SimpleQueueService.NonExistentQueue') {
         // Create queue if it doesn't exist
@@ -58,41 +47,40 @@ export class SqsService implements OnModuleInit {
               },
             })
             .promise();
-          this.queueUrl = result.QueueUrl;
-          console.log(`Created queue: ${this.queueUrl}`);
+          const queueUrl = result.QueueUrl || '';
+          console.log(`Created queue ${queueName}: ${queueUrl}`);
+          return queueUrl;
         } catch (createError) {
-          console.error('Failed to create queue:', createError);
+          console.error(`Failed to create queue ${queueName}:`, createError);
           throw createError;
         }
       } else {
-        console.error('Failed to get queue URL:', error);
+        console.error(`Failed to get queue URL for ${queueName}:`, error);
         throw error;
       }
     }
   }
 
-  async sendMessage(message: SqsMessage): Promise<void> {
+  async sendMessage(queueUrl: string, message: any): Promise<void> {
     try {
       await this.sqs
         .sendMessage({
-          QueueUrl: this.queueUrl,
+          QueueUrl: queueUrl,
           MessageBody: JSON.stringify(message),
         })
         .promise();
-      console.log(`Message sent to queue: ${message.taskId}`);
     } catch (error) {
       console.error('Failed to send message to SQS:', error);
       throw error;
     }
   }
 
-  async receiveMessages(maxMessages: number = 1): Promise<SqsMessageWithReceipt[]> {
+  async receiveMessages(queueUrl: string, maxMessages: number = 1): Promise<SqsMessageWithReceipt[]> {
     try {
       const result = await this.sqs
         .receiveMessage({
-          QueueUrl: this.queueUrl,
+          QueueUrl: queueUrl,
           MaxNumberOfMessages: maxMessages,
-          WaitTimeSeconds: 20, // Long polling
           VisibilityTimeout: 300,
         })
         .promise();
@@ -111,11 +99,11 @@ export class SqsService implements OnModuleInit {
     }
   }
 
-  async deleteMessage(receiptHandle: string): Promise<void> {
+  async deleteMessage(queueUrl: string, receiptHandle: string): Promise<void> {
     try {
       await this.sqs
         .deleteMessage({
-          QueueUrl: this.queueUrl,
+          QueueUrl: queueUrl,
           ReceiptHandle: receiptHandle,
         })
         .promise();
