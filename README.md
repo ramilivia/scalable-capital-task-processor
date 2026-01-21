@@ -1,98 +1,330 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Scalable Capital Task Processor
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A REST API service built with NestJS, TypeScript, PostgreSQL, AWS SQS, and Docker for processing asynchronous tasks such as currency conversion and interest calculations.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Technologies Used
 
-## Description
+- **NestJS** - Progressive Node.js framework
+- **TypeScript** - Type-safe JavaScript
+- **PostgreSQL** - Relational database
+- **TypeORM** - Object-Relational Mapping
+- **AWS SQS** - Message queue service for asynchronous task processing
+- **Terraform** - Infrastructure as Code for provisioning AWS resources
+- **LocalStack** - Local AWS cloud stack emulator for development
+- **Docker** - Containerization
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Why NestJS? (Architecture-Focused Overview)
 
-## Project setup
+The decision felt very natural since I am a seasoned javascript developer and I really think NestJS it's the best available framework for backend on the javascript ecosystem. 
 
+NestJS is a progressive Node.js framework that works on top of express and provides a strong architectural foundation out of the box.  It follows proven backend design practices—similar to those used in enterprise frameworks like Spring Boot—making it ideal for building scalable, maintainable, and testable server-side applications.
+
+### Modular Architecture
+NestJS organizes code using **modules**, each containing controllers, services, and providers.  
+This keeps features separated, makes the project easier to navigate, and supports clear boundaries between responsibilities.
+
+### Layered Design (Same Pattern Used in Spring Boot)
+NestJS encourages a classic **Layered Architecture** (also called N-Tier), typically consisting of:
+
+- **Controllers** — handle requests and responses  
+- **Services** — contain business logic  
+- **Repositories** — manage data access  
+
+This approach provides clear separation of concerns, predictable structure, and easier testing, while laying a solid foundation for future architectural growth.
+
+### Built-In TypeScript and Type Safety
+NestJS is written in **TypeScript** and fully supports static typing.  
+Benefits include:
+
+- Strong type safety across the entire application  
+- Safer refactoring and maintenance  
+- Better IDE support and autocompletion  
+- Fewer runtime errors thanks to early compile-time checks  
+
+### Dependency Injection for Flexibility and Testability
+NestJS uses **dependency injection (DI)** throughout the framework.  
+DI makes components **loosely coupled**, allowing you to easily replace or mock dependencies during testing.  
+This improves testability by enabling unit tests that focus on one class at a time without relying on real databases, services, or external APIs.
+
+### Database Integration
+NestJS has **native support for TypeORM**, making database integration simple and efficient.  
+It works seamlessly with relational databases such as **PostgreSQL**, providing:
+
+- Easy entity and repository management  
+- Strong type safety for database operations  
+- Automated migrations and schema synchronization  
+- Clean separation between business logic and data access  
+
+### Powerful CLI
+NestJS comes with a **command-line interface (CLI)** that streamlines development by allowing you to quickly generate modules, controllers, services, and other boilerplate code.  
+The CLI helps enforce project structure, reduces repetitive tasks, and accelerates onboarding for new team members.
+
+### Support for Event-Driven and Microservices Architectures
+NestJS has built-in support for event-driven workflows and **microservices**, with transport layers such as Redis, NATS, gRPC, Kafka, and RabbitMQ.  
+Teams can start with a monolith and gradually adopt distributed services without major rewrites.
+
+### Built-In Features for Common Backend Tasks
+NestJS provides structured tools to handle recurring backend tasks, keeping your code organized:
+
+- **Guards** — handle authorization  
+- **Pipes** — validation and data transformation  
+- **Interceptors** — logging, caching, and other cross-cutting concerns  
+- **Exception Filters** — centralized error handling  
+- **Middleware** — request processing extensions  
+
+These features help separate business logic from supporting infrastructure, making the code easier to maintain and scale.
+
+## PostgreSQL
+
+PostgreSQL is a powerful, open-source relational database known for reliability, strong data integrity, and advanced SQL features. It supports ACID-compliant transactions, rich data types like JSON and arrays, and extensions such as PostGIS. With high performance, scalability, and seamless integration with ORMs like TypeORM, PostgreSQL provides a stable and type-safe foundation for modern backend applications built with NestJS, and it can also enable semantic search using embeddings for advanced search capabilities.
+
+## Terraform
+
+**Terraform** is used for Infrastructure as Code (IaC) to provision and manage AWS resources, specifically SQS queues. This approach provides several key benefits:
+
+### Infrastructure as Code Benefits
+- **Version Control** - Infrastructure changes are tracked in git alongside application code
+- **Reproducibility** - Same infrastructure can be provisioned consistently across environments
+- **Documentation** - Infrastructure configuration serves as living documentation
+- **Collaboration** - Team members can review and understand infrastructure changes through code reviews
+
+### Local Development with LocalStack
+Terraform is configured to work with **LocalStack**, allowing developers to:
+- Provision SQS queues locally without AWS credentials
+- Test infrastructure changes before deploying to production
+- Maintain identical infrastructure configuration for local and production environments
+
+### Infrastructure Provisioned
+- **Task Queue** - Main queue for task processing with visibility timeout and message retention
+- **Dead Letter Queue** - Automatically receives messages after 3 failed processing attempts
+- **Queue Configuration** - Redrive policies, visibility timeouts, and retention periods
+
+The Terraform configuration is located in the `terraform/` directory and can be applied to both LocalStack (for local development) and AWS (for production deployment).
+
+## Project Setup
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- Docker and Docker Compose
+- Terraform (v1.0 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
 ```bash
-$ npm install
+git clone <repository-url>
+cd scalable-capital-currency
 ```
 
-## Compile and run the project
-
+2. Install dependencies:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
-
+3. Start Docker services (LocalStack and PostgreSQL):
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker-compose up -d
 ```
 
-## Deployment
+This will start:
+- **LocalStack** on port 4566 (AWS services emulator)
+- **PostgreSQL** on port 5432
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+4. Provision infrastructure with Terraform:
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+cd terraform
+terraform init
+terraform apply -auto-approve
+cd ..
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+This will create the SQS queues (task queue and dead letter queue) in LocalStack.
 
-## Resources
 
-Check out a few resources that may come in handy when working with NestJS:
+## Running the Application
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Development Mode
 
-## Support
+Start the application in watch mode (auto-reload on file changes):
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+npm run start:dev
+```
 
-## Stay in touch
+The application will:
+- Start on port 3000 (configurable via `PORT` environment variable)
+- Automatically create SQS queues on startup
+- Connect to PostgreSQL and create tables automatically (synchronize mode)
+- Start polling for tasks and results
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Production Mode
 
-## License
+1. Build the application:
+```bash
+npm run build
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+2. Start the application:
+```bash
+npm run start:prod
+```
+
+### Environment Variables
+
+You can configure the application using environment variables:
+
+```bash
+# AWS Configuration (for LocalStack, defaults are fine)
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+AWS_REGION=us-east-1
+AWS_ENDPOINT_URL=http://localhost:4566
+
+# SQS Configuration
+SQS_QUEUE_NAME=task-queue
+SQS_RESULTS_QUEUE_NAME=results-queue
+SQS_VISIBILITY_TIMEOUT=300
+SQS_MESSAGE_RETENTION_PERIOD=86400
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_DATABASE=tasks_db
+DB_SYNCHRONIZE=true
+DB_LOGGING=false
+
+# Application Configuration
+PORT=3000
+CONVERTER_POLL_INTERVAL=1000
+RESULTS_POLL_INTERVAL=1000
+```
+
+## API Usage
+
+### Create a Task
+
+**Currency Conversion:**
+```bash
+curl -X POST http://localhost:3000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "convert-currency",
+    "payload": {
+      "amount": 100,
+      "fromCurrency": "EUR",
+      "toCurrency": "USD"
+    }
+  }'
+```
+
+**Interest Calculation:**
+```bash
+curl -X POST http://localhost:3000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "calculate-interest",
+    "payload": {
+      "principal": 1000,
+      "annualRate": 0.05,
+      "days": 30
+    }
+  }'
+```
+
+### Get All Tasks
+
+```bash
+curl http://localhost:3000/tasks
+```
+
+### Get Task by ID
+
+```bash
+curl http://localhost:3000/tasks/<task-id>
+```
+
+### Check SQS Queue (for debugging)
+
+```bash
+curl http://localhost:3000/tasks/sqs?maxMessages=10
+```
+
+## Task Status Flow
+
+Tasks progress through the following statuses:
+
+1. **pending** - Task created and queued, waiting to be processed
+2. **processing** - Task is being processed by the converter service
+3. **completed** - Task completed successfully with a result
+4. **failed** - Task failed during processing (error details in `error` field)
+
+## Architecture Overview
+
+```
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │ HTTP POST /tasks
+       ▼
+┌─────────────────┐      ┌──────────────┐      ┌──────────────┐
+│ Tasks Controller│─────▶│ Tasks Service│─────▶│  PostgreSQL  │
+└─────────────────┘      └──────┬───────┘      └──────────────┘
+                                │
+                                │ Send Message
+                                ▼
+                         ┌──────────────┐
+                         │  Task Queue  │
+                         │    (SQS)     │
+                         └──────┬───────┘
+                                │
+                                │ Poll & Process
+                                ▼
+                         ┌──────────────┐
+                         │   Converter  │
+                         │   Service    │
+                         └──────┬───────┘
+                                │
+                                │ Send Result
+                                ▼
+                         ┌──────────────┐
+                         │ Results Queue│
+                         │    (SQS)     │
+                         └──────┬───────┘
+                                │
+                                │ Poll & Update
+                                ▼
+                         ┌──────────────┐      ┌──────────────┐
+                         │ Tasks Service│─────▶│  PostgreSQL  │
+                         └──────────────┘      └──────────────┘
+```
+
+## Project Structure
+
+```
+src/
+├── config/              # Configuration module
+├── tasks/               # Tasks module (API layer)
+│   ├── dto/            # Data Transfer Objects
+│   ├── entities/       # TypeORM entities
+│   ├── tasks.controller.ts
+│   ├── tasks.service.ts
+│   └── tasks.module.ts
+├── converter/          # Converter module (worker)
+│   ├── converter.service.ts
+│   └── converter.module.ts
+├── sqs/                # SQS module
+│   ├── sqs.service.ts
+│   └── sqs.module.ts
+├── app.module.ts       # Root module
+└── main.ts             # Application entry point
+
+terraform/
+├── main.tf             # Terraform configuration
+├── variables.tf         # Variable definitions
+└── outputs.tf          # Output values
+```
+
